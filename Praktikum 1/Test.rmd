@@ -6,4 +6,3 @@ x2<- rexp(10,5)
 data<-matrix(c(x1,x2), nrow=10)
 data
 ```
-test
