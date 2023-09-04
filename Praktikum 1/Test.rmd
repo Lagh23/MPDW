@@ -1,5 +1,5 @@
 #Library
-```r
+```{r}
 library("csvread")
 library("forecast")
 library("graphics")
@@ -8,8 +8,8 @@ library("TSA")
 library("ggplot2")
 library(rio)
 ```
-
-data1<- import("D:/2/data.csv")
+```{r}
+data1<- import("https://raw.githubusercontent.com/Lagh23/MPDW/main/Praktikum%201/test.csv")
 View(data1)
 str(data1)
 dim(data1)
@@ -18,16 +18,18 @@ summary(data1.ts)
 ts.plot(data1.ts, xlab="Time Period ", ylab="Reading", 
         main = "Time Series Plot")
 points(data1.ts)
-
+```{r}
 ### Pembagian Data
 
 #membagi training dan testing
+```{r}
 training<-data1[1:80,]
 testing<-data1[81:100,]
 train.ts <- ts(training$Close)
 test.ts <- ts(testing$Close)
-
+```
 #eksplorasi data
+```{r}
 plot(data1.ts, col="black",main="Plot semua data")
 points(data1.ts)
 
@@ -36,7 +38,9 @@ points(train.ts)
 
 plot(test.ts, col="blue",main="Plot data uji")
 points(test.ts)
-
+```
+###SES
+```{r}
 #Fungsi Holtwinter SES
 ses1<- HoltWinters(train.ts, gamma = FALSE, beta = FALSE, alpha = 0.2)
 plot(ses1)
@@ -51,8 +55,9 @@ plot(ses2)
 #ramalan
 ramalan2<- forecast(ses2, h=20)
 ramalan2
-
+```
 #Lamda Optimum Holt Winter
+```{r}
 sesopt<- HoltWinters(train.ts, gamma = FALSE, beta = FALSE,alpha = NULL)
 sesopt
 plot(sesopt)
@@ -60,8 +65,10 @@ plot(sesopt)
 #ramalan
 ramalanopt<- forecast(sesopt, h=20)
 ramalanopt
+```
 
-#Pada data training
+#Akurasi Pada data training
+```{r}
 SSE1<-ses1$SSE
 MSE1<-ses1$SSE/length(train.ts)
 RMSE1<-sqrt(MSE1)
@@ -123,8 +130,9 @@ akurasi.2 <- matrix(c(SSE.2,MSE.2,MAPE.2))
 row.names(akurasi.2)<- c("SSE", "MSE", "MAPE")
 colnames(akurasi.2) <- c("Akurasi lamda=0.7")
 akurasi.2
-
-###Akurasi data uji
+```
+#Akurasi data uji
+```{r}
 selisih1<-ramalan1$mean-testing$Close
 SSEtesting1<-sum(selisih1^2)
 MSEtesting1<-SSEtesting1/length(testing)
@@ -144,7 +152,9 @@ akurasitesting1
 akurasitesting2 <- matrix(c(MSEtesting1,MSEtesting2,MSEtestingopt))
 row.names(akurasitesting2)<- c("MSE1", "MSE2", "MSEopt")
 akurasitesting2
-
+```
+###DES
+```{r}
 #Lamda=0.2 dan gamma=0.2
 des.1<- HoltWinters(train.ts, gamma = FALSE, beta = 0.2, alpha = 0.2)
 plot(des.1)
@@ -160,22 +170,25 @@ plot(des.2)
 #ramalan
 ramalandes2<- forecast(des.2, h=20)
 ramalandes2
+```
 
 #Visually evaluate the prediction
+```{r}
 plot(data1.ts)
 lines(des.1$fitted[,1], lty=2, col="blue")
 lines(ramalandes1$mean, col="red")
-
+```
 #Lamda dan gamma optimum
+```{r}
 des.opt<- HoltWinters(train.ts, gamma = FALSE)
 des.opt
 plot(des.opt)
-
 #ramalan
 ramalandesopt<- forecast(des.opt, h=20)
 ramalandesopt
-
+```
 #Akurasi Data Training
+```{r}
 ssedes.train1<-des.1$SSE
 msedes.train1<-ssedes.train1/length(train.ts)
 sisaandes1<-ramalandes1$residuals
@@ -201,8 +214,9 @@ akurasides.2 <- matrix(c(ssedes.train2,msedes.train2,mapedes.train2))
 row.names(akurasides.2)<- c("SSE", "MSE", "MAPE")
 colnames(akurasides.2) <- c("Akurasi lamda=0.6 dan gamma=0.3")
 akurasides.2
-
+```
 #Akurasi Data Testing
+```{r}
 selisihdes1<-ramalandes1$mean-testing$Close
 selisihdes1
 
@@ -231,11 +245,13 @@ akurasitestingdes <-
 row.names(akurasitestingdes)<- c("SSE", "MSE", "MAPE")
 colnames(akurasitestingdes) <- c("des ske1","des ske2","des opt")
 akurasitestingdes
-
+```
 #Perbandingan SES dan DES
+```{r}
 MSEfull <-
   matrix(c(MSEtesting1,MSEtesting2,MSEtestingopt,MSEtestingdes1,MSEtestingdes2,
            MSEtestingdesopt),nrow=3,ncol=2)
 row.names(MSEfull)<- c("ske 1", "ske 2", "ske opt")
 colnames(MSEfull) <- c("ses","des")
 MSEfull
+```
