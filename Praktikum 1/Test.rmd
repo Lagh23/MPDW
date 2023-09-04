@@ -18,7 +18,7 @@ summary(data1.ts)
 ts.plot(data1.ts, xlab="Time Period ", ylab="Reading", 
         main = "Time Series Plot")
 points(data1.ts)
-```{r}
+```
 ### Pembagian Data
 
 #membagi training dan testing
