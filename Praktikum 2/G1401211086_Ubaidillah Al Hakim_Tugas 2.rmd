@@ -22,8 +22,119 @@ install.packages("HoRM")
 ```{r}
 library(TTR)
 library(forecast)
-library(lmtest) 
+library(lmtest)
 library(orcutt) 
-library(HoRM) 
+library(HoRM)
 ```
+## Panggil data, data yang dipakai adalah total emisi CO2 Indonesia tahun 1889 - 2014
+```{r}
+dt<- read.csv("https://raw.githubusercontent.com/Lagh23/MPDW/main/Praktikum%202/Data%20CO2.csv")
+dt
+```
+## Eksplorasi data
+plot time series
+```{r}
+data.ts <- ts(dt$Total)
+ts.plot(data.ts, xlab="Periode Waktu",ylab="Total CO2 Emissions", main= "Plot Times Series CO2 Emissions")
+points(data.ts)
+```
+Terlihat ada pola tren naik.
+
+## Membagi data latih dan uji (70:30)
+```{r}
+n = length(data.ts)
+propTrain = 0.7
+btsuji = 96
+training <- dt[1:btsuji,]
+testing <- dt[(btsuji+1):n,]
+training_ts <- ts(training$Total)
+testing_ts <- ts(testing$Total)
+```
+
+## Fungsi buat cari nilai SSE, MSE, dan MAPE
+```{r}
+Funcacc <- function(actual, predictions){
+  error <- actual - predictions
+  SSE <- sum(error^2)
+  MSE <- mean(error^2)
+  MAPE <- mean(abs(error)*100/actual)
+  
+  akurasi <- matrix(c(SSE, MSE, MAPE))
+  row.names(akurasi) <- c("SSE", "MSE", "MAPE")
+  colnames(akurasi) <- c("Akurasi")
+  return(akurasi)
+}
+```
+
+## Pake DMA 
+```{r}
+data.sma <- SMA(training_ts,n=4)
+dma <- SMA(data.sma, n = 4)
+At <- 2*data.sma - dma
+Bt <- 2/(4-1)*(data.sma - dma)
+data.dma<- At+Bt
+data.ramal2<- c(NA, data.dma)
+
+num <- n-btsuji
+t = 1:(num)
+f = c()
+
+for (i in t) {
+  f[i] = At[length(At)] + Bt[length(Bt)]*(i)
+}
+
+data.gab2 <- cbind(aktual = c(training_ts,rep(NA,num)), pemulusan1 = c(data.sma,rep(NA,num)),pemulusan2 = c(data.dma, rep(NA,num)),At = c(At, rep(NA,num)), Bt = c(Bt,rep(NA,num)),ramalan = c(data.ramal2, f[-1]))
+data.gab2
+```
+
+## Plot
+```{r}
+data_ts = ts(dt$Total)
+ts.plot(data_ts, xlab="Time Period ", ylab="CO2 Emissions", main= "DMA N=4 Data CO2 Emissions")
+points(data_ts)
+lines(data.gab2[,3],col="green",lwd=2)
+lines(data.gab2[,6],col="red",lwd=2)
+legend("topleft",c("data aktual","data pemulusan","data peramalan"), lty=8, col=c("red","green","blue"), cex=0.8)
+```
+
+## SSE, MSE. dan MAPE pada data latih dengan DMA
+```{r}
+Funcacc(data.gab2[,1][8:num],data.gab2[,6][8:num])
+```
+## SSE, MSE. dan MAPE pada data uji dengan DMA
+```{r}
+akurasiFunc(testing_ts[1:(num)], data.gab2[,6][(btsuji+1):n])
+```
+
+## Pemodelan Double Exponential Smoothing
+```{r}
+des.opt <- HoltWinters(training_ts, gamma = FALSE, beta = NULL, alpha = NULL)
+print(paste(des.opt$beta,des.opt$alpha))
+plot(des.opt)
+```
+
+## Melakukan peramalan
+```{r}
+ramalan_des_opt <- forecast(des.opt,h = num)
+des.opt$fitted[,1]
+```
+## SSE, MSE. dan MAPE pada data latih dengan DES
+```{r}
+akurasiFunc(training_ts[3:btsuji],des.opt$fitted[,1])
+```
+## SSE, MSE. dan MAPE pada data latih dengan DES
+```{r}
+akurasiFunc(testing_ts[1:num],ramalan_des_opt$mean)
+```
+## Berdasarkan perbandingan akurasi data uji tersebut, terlihat nilai SSE, MSE, dan MAPE metode DES lebih kecil dibandingkan dengan metode DMA. Oleh karena itu, metode peramalan dan pemulusan yang terbaik antara keduanya adalah dengan metode DES.
+
+## Eksplorasi kembali
+```{r}
+#Pembuatan Scatter Plot
+plot(dt$Solid.Fuel,dt$Total, pch = 20, col = "blue",
+     main = "Scatter Plot Solid.Fuel vs Nilai Total CO2 Emissions",
+     xlab = "Tahun",
+     ylab = "Nilai Total CO2 Emissions")
+```
+terlihat eksponensial maka diakarkan sehingga menjadi linier
 
