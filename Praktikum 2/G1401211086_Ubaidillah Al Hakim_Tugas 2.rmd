@@ -138,3 +138,106 @@ plot(dt$Solid.Fuel,dt$Total, pch = 20, col = "blue",
 ```
 terlihat eksponensial maka diakarkan sehingga menjadi linier
 
+## Scatter setelah diakarkan
+```{r}
+plot(sqrt(dt$Solid.Fuel),dt$Total, pch = 20, col = "blue",
+     main = "Scatter Plot akar Solid.Fuel vs Nilai Total CO2 Emissions",
+     xlab = "Tahun",
+     ylab = "Nilai Total CO2 Emissions")
+#Nilai Korelasi
+cor(dt$Total,sqrt(dt$Solid.Fuel))
+```
+## Buat model regresi
+``` {r}
+model<- lm(df$Total~sqrt(df$Solid.Fuel)+df$Year+df$Liquid.Fuel)
+summary(model)
+```
+Eksplorasi
+```{r}
+#sisaan dan fitted value
+sisaan<- residuals(model)
+fitValue<- predict(model)
+
+#Diagnostik dengan eksploratif
+par(mfrow = c(2,2))
+qqnorm(sisaan)
+qqline(sisaan, col = "steelblue", lwd = 2)
+plot(fitValue, sisaan, col = "steelblue", pch = 20, xlab = "Sisaan", ylab = "Fitted Values", main = "Sisaan vs Fitted Values")
+abline(a = 0, b = 0, lwd = 2)
+hist(sisaan, col = "steelblue")
+plot(seq(1,length(sisaan),1), sisaan, col = "steelblue", pch = 20, xlab = "Sisaan", ylab = "Order", main = "Sisaan vs Order")
+lines(seq(1,length(sisaan),1), sisaan, col = "red")
+abline(a = 0, b = 0, lwd = 2)
+```
+## Kolmogorov-smirov
+#Melihat Sisaan Menyebar Normal/Tidak
+#H0: sisaan mengikuti sebaran normal
+#H1: sisaan tidak mengikuti sebaran normal
+```{r}
+ks.test(sisaan, "pnorm", mean=mean(sisaan), sd=sd(sisaan))
+```
+#Deteksi autokorelasi dengan uji-Durbin Watson
+```{r}
+dwtest(model)
+```
+## Hildreth-Lu
+```{r}
+hildreth.lu.func<- function(r, model){
+  x <- model.matrix(model)[,-1]
+  y <- model.response(model.frame(model))
+  n <- length(y)
+  t <- 2:n
+  y <- y[t]-r*y[t-1]
+  x <- x[t]-r*x[t-1]
+  
+  return(lm(y~x))
+}
+```
+#Cari rho dengan SSE minimal
+```{r}
+r <- c(seq(0.1,1, by= 0.1))
+tab <- data.frame("rho" = r, "SSE" = sapply(r, function(i){deviance(hildreth.lu.func(i, model))}))
+round(tab, 4)
+tab
+```
+masih dilanjutin
+```{r}
+rOpt <- seq(1,1.1, by= 0.01)
+tabOpt <- data.frame("rho" = rOpt, "SSE" = sapply(rOpt, function(i){deviance(hildreth.lu.func(i, model))}))
+head(tabOpt[order(tabOpt$SSE),])
+```
+Lagi
+```{r}
+rOpt <- seq(1.01,1.05, by= 0.001)
+tabOpt <- data.frame("rho" = rOpt, "SSE" = sapply(rOpt, function(i){deviance(hildreth.lu.func(i, model))}))
+head(tabOpt[order(tabOpt$SSE),])
+```
+didapat rho terbaik 1.012
+#cari model terbaik
+```{r}
+modelHL <- hildreth.lu.func(1.012, model)
+summary(modelHL)
+```
+#lakukan Transformasi Balik
+```{r}
+cat("y = ", coef(modelHL)[1]/(1-1.012), "+", coef(modelHL)[2],"x", sep = "")
+```
+#Durbin watson lagi untuk cek autokor
+
+```{r}
+dwtest(modelHL)
+```
+terlihat tidak ada auto korelasi
+
+## Bandingkan antara sebelum dan sesudah
+```{r}
+sseModelawal <- anova(model)$`Sum Sq`[-1]
+sseModelHL <- anova(modelHL)$`Sum Sq`[-1]
+mseModelawal <- sseModelawal/length(df$Total)
+mseModelHL <- sseModelHL/length(df$Total)
+akurasi <- matrix(c(sseModelawal,sseModelHL,
+                    mseModelawal,mseModelHL),nrow=2,ncol=2,byrow = T)
+colnames(akurasi) <- c("Model Awal", "Model Hildreth-Lu")
+row.names(akurasi) <- c("SSE","MSE")
+akurasi
+```
