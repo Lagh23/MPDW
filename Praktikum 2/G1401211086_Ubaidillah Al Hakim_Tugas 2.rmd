@@ -149,7 +149,7 @@ cor(dt$Total,sqrt(dt$Solid.Fuel))
 ```
 ## Buat model regresi
 ``` {r}
-model<- lm(df$Total~sqrt(df$Solid.Fuel)+df$Year+df$Liquid.Fuel)
+model<- lm(dt$Total~sqrt(dt$Solid.Fuel)+dt$Year+dt$Liquid.Fuel)
 summary(model)
 ```
 Eksplorasi
@@ -233,8 +233,8 @@ terlihat tidak ada auto korelasi
 ```{r}
 sseModelawal <- anova(model)$`Sum Sq`[-1]
 sseModelHL <- anova(modelHL)$`Sum Sq`[-1]
-mseModelawal <- sseModelawal/length(df$Total)
-mseModelHL <- sseModelHL/length(df$Total)
+mseModelawal <- sseModelawal/length(dt$Total)
+mseModelHL <- sseModelHL/length(dt$Total)
 akurasi <- matrix(c(sseModelawal,sseModelHL,
                     mseModelawal,mseModelHL),nrow=2,ncol=2,byrow = T)
 colnames(akurasi) <- c("Model Awal", "Model Hildreth-Lu")
